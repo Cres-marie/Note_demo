@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:notes_demo/models/notesDb.dart';
+//import 'package:notes_demo/screens/trashScreen.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -17,7 +18,11 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
- late NotesDb dbmanager = NotesDb();
+  final titleController = TextEditingController();
+  final descriptionController = TextEditingController();
+  final dateController = TextEditingController();
+  //NotesDb? notesModel;
+  late NotesDb dbmanager = NotesDb();
 
   //NotesDb _notesDb = NotesDb();
 // List to store notes retrieved from the database
@@ -36,29 +41,42 @@ class _HomeState extends State<Home> {
   Future<void> _loadNotes() async {
     //print("Opening database connection...");
     // Call the open method to establish the database connection and create the notes table if it does not exist.
+    //try {
+    await dbmanager.open();
+
+    // Call the getdata method to retrieve the list of notes from the database.
+    //print("Retrieving notes from the database...");
+    List<NotesModel> value = await dbmanager.getdata();
+    print("Number of notes retrieved: ${value.length}");
+    // for (var note in value) {
+    //     print("Note ID: ${note.id}");
+    //     print("Note Title: ${note.title}");
+    //     print("Note Description: ${note.description}");
+
+    //     print("------------------------");
+    // }
+
+    // Update the _notes variable with the retrieved notes.
+    setState(() {
+      _notes = value;
+    });
+    // print("Notes loaded successfully.");
+    //} catch (e) {
+    //print('Error retrieving : $e');
+    //}
+  }
+
+  Future<void> updatedata(NotesModel note, int index) async {
     try {
-      await dbmanager.open();
+      // Update the note in the database.
+      await NotesDb().updatedata(note);
 
-      // Call the getdata method to retrieve the list of notes from the database.
-      //print("Retrieving notes from the database...");
-      List<NotesModel> value = await dbmanager.getdata();
-      print("Number of notes retrieved: ${value.length}");
-      for (var note in value) {
-          print("Note ID: ${note.id}");
-          print("Note Title: ${note.title}");
-          print("Note Description: ${note.description}");
-  
-          print("------------------------");
-      }
-
-
-      // Update the _notes variable with the retrieved notes.
+      // Update the _notes list with the updated note.
       setState(() {
-        _notes = value;
+        _notes[index] = note;
       });
-      print("Notes loaded successfully.");
     } catch (e) {
-      print('Error retrieving : $e');
+      print("Error updating note: $e");
     }
   }
 
@@ -140,7 +158,7 @@ class _HomeState extends State<Home> {
             ),
             Container(
               height: 200,
-              //width: 200,
+              //width: 400,
               decoration: BoxDecoration(
                 //color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
@@ -167,35 +185,58 @@ class _HomeState extends State<Home> {
                       itemCount: _notes.length,
                       itemBuilder: (context, index) {
                         NotesModel notesModel = _notes[index];
-                          print("Note ID: ${notesModel.id}");
-                          print("Note Title: ${notesModel.title}");
-                          print("Note Description: ${notesModel.description}");
-                        
-                          return GestureDetector(
+                        // print("Note ID: ${notesModel.id}");
+                        // print("Note Title: ${notesModel.title}");
+                        // print("Note Description: ${notesModel.description}");
+
+                        return GestureDetector(
                             onLongPress: () async {
-                              // delete note from database
-                              //await dbmanager.deletedata(notesModel.id);
-
-                              // reload notes list from database and update UI
-                              _loadNotes();
+                              showDialog(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                          title: Text("Delete Note?"),
+                                          content: Text(
+                                              "Are you sure you want to delete this note?"),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.pop(context);
+                                              },
+                                              child: Text("Cancel"),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                try {
+                                                  dbmanager.deletedata(
+                                                      notesModel.id!);
+                                                  Navigator.pop(context);
+                                                  setState(() {
+                                                    _notes.removeAt(index);
+                                                  });
+                                                } catch (e) {
+                                                  print('the error is $e');
+                                                }
+                                              },
+                                              child: Text("Delete"),
+                                            )
+                                          ]));
                             },
+                            //onTap: () => updatedata(notesModel, index),
+                            onTap: () {
+                              titleController.text = notesModel.title;
+                              descriptionController.text = notesModel.description;
+                            
 
-                            //onTap: () => updatedata(notesModel),
-                            child: Container(
-                              width: 200,
-                              child: Card(
-                                child: Column(children: [
-                                  Text('title: ${notesModel.title}'),
-                                  Text(
-                                      'description: ${notesModel.description}'),
-                                ]),
-                              ),
-                            ),
-                          );
-                        
+                            },
+                            child: Card(
+                              child: Column(children: [
+                                Text('title: ${notesModel.title}'),
+                                Text('description: ${notesModel.description}'),
+                              ]),
+                            ));
                       },
                     ),
-            ),
+            )
           ],
         ),
       ),

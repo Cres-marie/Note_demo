@@ -22,7 +22,6 @@ class _CreateNoteState extends State<CreateNote> {
   final descriptionController = TextEditingController();
   final dateController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  NotesModel notesModel = new NotesModel(title: "", description: "", date: "");
 
   @override
   Widget build(BuildContext context) {
@@ -53,12 +52,12 @@ class _CreateNoteState extends State<CreateNote> {
                       //   const SnackBar(content: Text('Processing Data')),
                       // )
                       // ;
-                      //                 NotesModel note = NotesModel(
-                      //   title: titleController.text.trim(),
-                      //   description: descriptionController.text.trim(),
-                      //   date: dateController.text.trim(),
-                      // );
-                      dbmanager.insertdata(notesModel).then((id) {
+                      NotesModel note = NotesModel(
+                        title: titleController.text.trim(),
+                        description: descriptionController.text.trim(),
+                        date: dateController.text.trim(),
+                      );
+                      dbmanager.insertdata(note).then((id) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content: Text('Note saved successfully!')),
